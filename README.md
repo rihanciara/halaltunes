@@ -1,36 +1,44 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# HalalTunes 🎶
 
-## Getting Started
+HalalTunes is a Next.js application designed to make copied YouTube songs or videos "music less" by extracting only the vocals. This application is optimized for deployment on Vercel.
 
-First, run the development server:
+## 🚀 Getting Started
+
+First, install dependencies and run the development server:
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🛠️ Architecture for Vercel
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Since audio processing (like vocal isolation via Demucs/Spleeter models) requires heavy computational resources (GPUs) and exceeds Vercel's serverless function time limits and 50MB execution limits, this project is built using a decoupled architecture:
 
-## Learn More
+1. **Frontend**: A highly responsive Next.js App directory frontend hosted seamlessly on Vercel.
+2. **Backend/API (Simulated)**: The `/api/process` endpoint currently simulates the process by returning a mock audio response.
 
-To learn more about Next.js, take a look at the following resources:
+### How to Implement Real Vocal Isolation:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+To make this production-ready, you need to integrate a 3rd-party API in `src/app/api/process/route.ts`:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. **Get Audio:** Use a service or library (like `ytdl-core` in a separate long-running worker or RapidAPI) to convert the YouTube link to an audio file.
+2. **Audio Separation:** Use an API like **Replicate** (e.g., `cjwbw/demucs`) to process the audio file and isolate vocals from the instruments.
+3. **Response:** Return the separated vocal audio URL to the Next.js frontend to be displayed and downloaded.
 
-## Deploy on Vercel
+### 🚀 Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Push this repository to GitHub, GitLab, or Bitbucket.
+2. Import the repository into your Vercel dashboard.
+3. Add any necessary environment variables (e.g., `REPLICATE_API_TOKEN`).
+4. Click **Deploy**.
+
+## 📝 Technologies Used
+* Next.js 14
+* React
+* Tailwind CSS
+* Vercel Serverless Functions
