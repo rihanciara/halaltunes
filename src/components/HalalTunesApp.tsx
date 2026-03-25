@@ -4,38 +4,15 @@ import { useState, useEffect } from "react";
 
 export default function HalalTunesApp() {
   const [url, setUrl] = useState("");
-  const [backendUrl, setBackendUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  // Load backend URL from local storage if previously saved
-  useEffect(() => {
-    const savedBackend = localStorage.getItem("halaltunes_backend");
-    if (savedBackend) {
-      setBackendUrl(savedBackend);
-    }
-  }, []);
-
-  const handleBackendChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setBackendUrl(e.target.value);
-    localStorage.setItem("halaltunes_backend", e.target.value);
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!url) return;
     
-    // Auto-clean backend URL
-    let cleanBackendUrl = backendUrl.trim();
-    if (cleanBackendUrl.endsWith('/')) {
-        cleanBackendUrl = cleanBackendUrl.slice(0, -1);
-    }
-
-    if (!cleanBackendUrl) {
-      setError("Please paste the Hugging Face Backend URL first!");
-      return;
-    }
+    const cleanBackendUrl = "https://ithiya-halaltunes.hf.space";
 
     setLoading(true);
     setError(null);
@@ -86,23 +63,6 @@ export default function HalalTunesApp() {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           
           <div className="rounded-md shadow-sm space-y-4">
-            <div>
-              <label htmlFor="backend-url" className="block text-sm font-medium text-gray-700 mb-1">
-                Hugging Face Backend URL
-              </label>
-              <input
-                id="backend-url"
-                name="backendUrl"
-                type="url"
-                required
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="https://your-username-halaltunes.hf.space"
-                value={backendUrl}
-                onChange={handleBackendChange}
-              />
-              <p className="text-xs text-gray-500 mt-1">Paste your Hugging Face Space URL here.</p>
-            </div>
-
             <div>
               <label htmlFor="youtube-url" className="block text-sm font-medium text-gray-700 mb-1">
                 YouTube URL
