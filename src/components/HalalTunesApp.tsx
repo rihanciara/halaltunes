@@ -33,7 +33,7 @@ export default function HalalTunesApp() {
     }
 
     if (!cleanBackendUrl) {
-      setError("Please paste the Colab Backend URL first!");
+      setError("Please paste the Hugging Face Backend URL first!");
       return;
     }
 
@@ -42,13 +42,12 @@ export default function HalalTunesApp() {
     setResult(null);
 
     try {
-      // Connect directly to the Colab Ngrok backend!
+      // Connect directly to the Hugging Face API!
       // This bypasses Vercel's 10s timeout limit.
       const res = await fetch(`${cleanBackendUrl}/api/process`, {
         method: "POST",
         headers: { 
-            "Content-Type": "application/json",
-            "ngrok-skip-browser-warning": "true" // Required for free ngrok accounts
+            "Content-Type": "application/json"
         },
         body: JSON.stringify({ url }),
       });
@@ -67,7 +66,7 @@ export default function HalalTunesApp() {
       const audioUrl = URL.createObjectURL(blob);
       setResult(audioUrl);
     } catch (err: any) {
-      setError(err.message || "Could not connect to Colab backend. Make sure it is running.");
+      setError(err.message || "Could not connect to Hugging Face backend. Make sure it is running.");
     } finally {
       setLoading(false);
     }
@@ -81,7 +80,7 @@ export default function HalalTunesApp() {
             HalalTunes 🎶
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Extract vocals using a free Google Colab GPU backend.
+            Extract vocals using your free Hugging Face API backend.
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
@@ -89,7 +88,7 @@ export default function HalalTunesApp() {
           <div className="rounded-md shadow-sm space-y-4">
             <div>
               <label htmlFor="backend-url" className="block text-sm font-medium text-gray-700 mb-1">
-                Colab Backend URL
+                Hugging Face Backend URL
               </label>
               <input
                 id="backend-url"
@@ -97,11 +96,11 @@ export default function HalalTunesApp() {
                 type="url"
                 required
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="https://xxxx.ngrok-free.app"
+                placeholder="https://your-username-halaltunes.hf.space"
                 value={backendUrl}
                 onChange={handleBackendChange}
               />
-              <p className="text-xs text-gray-500 mt-1">Run the Colab notebook and paste the Ngrok URL here.</p>
+              <p className="text-xs text-gray-500 mt-1">Paste your Hugging Face Space URL here.</p>
             </div>
 
             <div>
@@ -129,7 +128,7 @@ export default function HalalTunesApp() {
                 loading ? "bg-indigo-400" : "bg-indigo-600 hover:bg-indigo-700"
               } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors`}
             >
-              {loading ? "Processing (Takes 1-2 mins)..." : "Remove Music"}
+              {loading ? "Processing (Can take 5-10 mins on Free CPU)..." : "Remove Music"}
             </button>
           </div>
         </form>
