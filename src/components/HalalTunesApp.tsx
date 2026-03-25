@@ -4,27 +4,47 @@ import { useState, useEffect } from "react";
 
 export default function HalalTunesApp() {
   const [url, setUrl] = useState("");
+  const [backendUrl, setBackendUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const savedBackend = localStorage.getItem("halaltunes_backend");
+    if (savedBackend) {
+      setBackendUrl(savedBackend);
+    }
+  }, []);
+
+  const handleBackendChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setBackendUrl(e.target.value);
+    localStorage.setItem("halaltunes_backend", e.target.value);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!url) return;
     
-    const cleanBackendUrl = "https://ithiya-halaltunes.hf.space";
+    let cleanBackendUrl = backendUrl.trim();
+    if (cleanBackendUrl.endsWith('/')) {
+        cleanBackendUrl = cleanBackendUrl.slice(0, -1);
+    }
+
+    if (!cleanBackendUrl) {
+      setError("Please paste the Colab Backend URL first!");
+      return;
+    }
 
     setLoading(true);
     setError(null);
     setResult(null);
 
     try {
-      // Connect directly to the Hugging Face API!
-      // This bypasses Vercel's 10s timeout limit.
       const res = await fetch(`${cleanBackendUrl}/api/process`, {
         method: "POST",
         headers: { 
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "ngrok-skip-browser-warning": "true"
         },
         body: JSON.stringify({ url }),
       });
@@ -43,7 +63,7 @@ export default function HalalTunesApp() {
       const audioUrl = URL.createObjectURL(blob);
       setResult(audioUrl);
     } catch (err: any) {
-      setError(err.message || "Could not connect to Hugging Face backend. Make sure it is running.");
+      setError(err.message || "Could not connect to Colab backend. Make sure it is running.");
     } finally {
       setLoading(false);
     }
@@ -57,12 +77,29 @@ export default function HalalTunesApp() {
             HalalTunes 🎶
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Extract vocals using your free Hugging Face API backend.
+            Extract vocals using a free Google Colab GPU backend.
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           
           <div className="rounded-md shadow-sm space-y-4">
+            <div>
+              <label htmlFor="backend-url" className="block text-sm font-medium text-gray-700 mb-1">
+                Colab Backend URL
+              </label>
+              <input
+                id="backend-url"
+                name="backendUrl"
+                type="url"
+                required
+                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                placeholder="https://xxxx.ngrok-free.app"
+                value={backendUrl}
+                onChange={handleBackendChange}
+              />
+              <p className="text-xs text-gray-500 mt-1">Run the Colab notebook and paste the Ngrok URL here.</p>
+            </div>
+
             <div>
               <label htmlFor="youtube-url" className="block text-sm font-medium text-gray-700 mb-1">
                 YouTube URL
@@ -88,7 +125,7 @@ export default function HalalTunesApp() {
                 loading ? "bg-indigo-400" : "bg-indigo-600 hover:bg-indigo-700"
               } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors`}
             >
-              {loading ? "Processing (Can take 5-10 mins on Free CPU)..." : "Remove Music"}
+              {loading ? "Processing (Takes 1-2 mins on GPU)..." : "Remove Music"}
             </button>
           </div>
         </form>
