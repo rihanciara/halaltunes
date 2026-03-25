@@ -1,58 +1,111 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function HalalTunesApp() {
   const [url, setUrl] = useState("");
+  const [backendUrl, setBackendUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Load backend URL from local storage if previously saved
+  useEffect(() => {
+    const savedBackend = localStorage.getItem("halaltunes_backend");
+    if (savedBackend) {
+      setBackendUrl(savedBackend);
+    }
+  }, []);
+
+  const handleBackendChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setBackendUrl(e.target.value);
+    localStorage.setItem("halaltunes_backend", e.target.value);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!url) return;
+    
+    // Auto-clean backend URL
+    let cleanBackendUrl = backendUrl.trim();
+    if (cleanBackendUrl.endsWith('/')) {
+        cleanBackendUrl = cleanBackendUrl.slice(0, -1);
+    }
+
+    if (!cleanBackendUrl) {
+      setError("Please paste the Colab Backend URL first!");
+      return;
+    }
 
     setLoading(true);
     setError(null);
     setResult(null);
 
     try {
-      // Send the URL to our backend to process
-      const res = await fetch("/api/process", {
+      // Connect directly to the Colab Ngrok backend!
+      // This bypasses Vercel's 10s timeout limit.
+      const res = await fetch(`${cleanBackendUrl}/api/process`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+            "Content-Type": "application/json",
+            "ngrok-skip-browser-warning": "true" // Required for free ngrok accounts
+        },
         body: JSON.stringify({ url }),
       });
 
-      const data = await res.json();
-
       if (!res.ok) {
-        throw new Error(data.error || "Failed to process the audio");
+        let errorMsg = "Failed to process the audio";
+        try {
+            const data = await res.json();
+            errorMsg = data.error || errorMsg;
+        } catch(e) {}
+        throw new Error(errorMsg);
       }
 
-      setResult(data.audioUrl);
+      // The backend returns an audio file directly
+      const blob = await res.blob();
+      const audioUrl = URL.createObjectURL(blob);
+      setResult(audioUrl);
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Could not connect to Colab backend. Make sure it is running.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-md">
+    <div className="flex flex-col items-center justify-center min-h-screen py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
+      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-md border border-gray-100">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            HalalTunes
+            HalalTunes 🎶
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Remove music from YouTube videos and keep only the vocals.
+            Extract vocals using a free Google Colab GPU backend.
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm -space-y-px">
+          
+          <div className="rounded-md shadow-sm space-y-4">
             <div>
-              <label htmlFor="youtube-url" className="sr-only">
+              <label htmlFor="backend-url" className="block text-sm font-medium text-gray-700 mb-1">
+                Colab Backend URL
+              </label>
+              <input
+                id="backend-url"
+                name="backendUrl"
+                type="url"
+                required
+                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                placeholder="https://xxxx.ngrok-free.app"
+                value={backendUrl}
+                onChange={handleBackendChange}
+              />
+              <p className="text-xs text-gray-500 mt-1">Run the Colab notebook and paste the Ngrok URL here.</p>
+            </div>
+
+            <div>
+              <label htmlFor="youtube-url" className="block text-sm font-medium text-gray-700 mb-1">
                 YouTube URL
               </label>
               <input
@@ -60,8 +113,8 @@ export default function HalalTunesApp() {
                 name="url"
                 type="url"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Paste YouTube link here..."
+                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                placeholder="https://www.youtube.com/watch?v=..."
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
               />
@@ -74,35 +127,35 @@ export default function HalalTunesApp() {
               disabled={loading}
               className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
                 loading ? "bg-indigo-400" : "bg-indigo-600 hover:bg-indigo-700"
-              } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
+              } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors`}
             >
-              {loading ? "Processing..." : "Remove Music"}
+              {loading ? "Processing (Takes 1-2 mins)..." : "Remove Music"}
             </button>
           </div>
         </form>
 
         {error && (
-          <div className="mt-4 text-red-600 text-sm text-center">
+          <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-600 text-sm text-center rounded-md">
             {error}
           </div>
         )}
 
         {result && (
-          <div className="mt-6 p-4 bg-green-50 rounded-md">
+          <div className="mt-6 p-4 bg-green-50 rounded-md border border-green-200">
             <h3 className="text-lg font-medium text-green-800 text-center mb-2">
-              Vocals Extracted!
+              Vocals Extracted! 🎉
             </h3>
-            <audio controls className="w-full">
-              <source src={result} type="audio/mpeg" />
+            <audio controls className="w-full mt-2 mb-4">
+              <source src={result} type="audio/wav" />
               Your browser does not support the audio element.
             </audio>
             <div className="mt-4 text-center">
               <a
                 href={result}
-                download="halal-vocals.mp3"
-                className="text-indigo-600 hover:text-indigo-500 font-medium text-sm"
+                download="halal-vocals.wav"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
               >
-                Download Audio
+                Download Vocals
               </a>
             </div>
           </div>
